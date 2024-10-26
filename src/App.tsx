@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 type LanguageOption = {
   code: string
@@ -33,9 +33,26 @@ const languageOptions: LanguageOption[] = [
 ]
 
 function App() {
-  const voices = speechSynthesis.getVoices()
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
   const [text, setText] = useState('')
   const [lang, setLang] = useState(languageOptions[0].code)
+
+  useEffect(() => {
+    const loadVoices = () => {
+      const voicesList = speechSynthesis.getVoices()
+      setVoices(voicesList)
+    }
+
+    // 음성이 변경되거나 로드된 후 `loadVoices` 호출
+    speechSynthesis.addEventListener('voiceschanged', loadVoices)
+
+    // 초기 음성 로드 호출 (이미 로드된 경우 대비)
+    loadVoices()
+
+    return () => {
+      speechSynthesis.removeEventListener('voiceschanged', loadVoices)
+    }
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setText(e.target.value)
@@ -65,6 +82,7 @@ function App() {
       return
     }
 
+    console.log(utterance.voice)
     utterance.addEventListener('end', () => {
       console.log('음성 변환이 완료되었습니다.')
     })
