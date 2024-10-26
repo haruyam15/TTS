@@ -42,11 +42,8 @@ function App() {
       const voicesList = speechSynthesis.getVoices()
       setVoices(voicesList)
     }
-
-    // 음성이 변경되거나 로드된 후 `loadVoices` 호출
     speechSynthesis.addEventListener('voiceschanged', loadVoices)
 
-    // 초기 음성 로드 호출 (이미 로드된 경우 대비)
     loadVoices()
 
     return () => {
