@@ -36,6 +36,8 @@ function App() {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
   const [text, setText] = useState('')
   const [lang, setLang] = useState(languageOptions[0].code)
+  const [speakerList, setSpeakerList] = useState<SpeechSynthesisVoice[]>([])
+  const [speaker, setSpeaker] = useState<SpeechSynthesisVoice | null>(null)
 
   useEffect(() => {
     const loadVoices = () => {
@@ -45,23 +47,51 @@ function App() {
     speechSynthesis.addEventListener('voiceschanged', loadVoices)
 
     loadVoices()
-
     return () => {
       speechSynthesis.removeEventListener('voiceschanged', loadVoices)
     }
   }, [])
 
+  useEffect(() => {
+    const langVoices = voices.filter(voice => voice.lang === lang) || null
+    if (langVoices) {
+      setSpeakerList(langVoices)
+    }
+    console.log(voices)
+  }, [voices])
+
+  useEffect(() => {
+    const langVoices = voices.filter(voice => voice.lang === lang) || null
+    if (langVoices) {
+      setSpeakerList(langVoices)
+    }
+  }, [lang])
+
+  useEffect(() => {
+    const speakerInit = speakerList.find(list => list.lang === lang)
+    if (speakerInit) {
+      setSpeaker(speakerInit)
+    }
+  }, [speakerList])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setText(e.target.value)
   }
 
-  const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleLangSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setLang(e.target.value)
   }
 
-  const textToSpeech = (targetText: string, lang: LanguageCode) => {
-    console.log(lang)
+  const handleSpeakerSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedSpeaker =
+      speakerList.find(list => e.target.value === list.name) || null
+    if (selectedSpeaker) {
+      setSpeaker(selectedSpeaker)
+    }
+  }
 
+  const textToSpeech = (targetText: string, lang: LanguageCode) => {
+    speechSynthesis.cancel()
     if (targetText.length === 0) {
       alert('텍스트를 입력해주세요.')
       return
@@ -72,14 +102,8 @@ function App() {
     utterance.rate = 1
     utterance.volume = 1
 
-    utterance.voice = voices.find(voice => voice.lang === lang) || null
+    utterance.voice = speaker
 
-    if (utterance.voice === null) {
-      alert('사용 가능한 언어가 없습니다.')
-      return
-    }
-
-    console.log(utterance.voice)
     utterance.addEventListener('end', () => {
       console.log('음성 변환이 완료되었습니다.')
     })
@@ -90,6 +114,7 @@ function App() {
   const handleClick = () => {
     textToSpeech(text, lang)
   }
+
   return (
     <>
       <input
@@ -101,7 +126,7 @@ function App() {
       <select
         name="lang"
         id="lang"
-        onChange={handleSelect}
+        onChange={handleLangSelect}
         value={lang}>
         {languageOptions.map(opt => (
           <option
@@ -111,6 +136,22 @@ function App() {
           </option>
         ))}
       </select>
+      {speaker && (
+        <select
+          name="speaker"
+          id="speaker"
+          value={speaker.name}
+          onChange={handleSpeakerSelect}>
+          {speakerList.map((list, i) => (
+            <option
+              value={list.name}
+              key={i}>
+              {list.name}
+            </option>
+          ))}
+        </select>
+      )}
+
       <button onClick={handleClick}>TTS 변환하기</button>
     </>
   )
